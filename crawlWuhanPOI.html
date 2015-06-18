@@ -1,0 +1,251 @@
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+    <style type="text/css">
+        body, html {width: 100%;height: 100%;margin:0;font-family:"微软雅黑";}
+        #allmap{height:500px;width:100%;}
+        #r-result{width:100%; font-size: 14px; line-height: 20px;}
+    </style>
+    <script type="text/javascript" src="http://api.map.baidu.com/api?v=1.2"></script>
+    <script type="text/javascript" src="./SearchInRectangle.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+
+    <title>POI爬取工具</title>
+</head>
+<body>
+    <div id="allmap"></div>
+    <div id="r-result"></div>
+    <input type="button" value="弹出坐标" onclick="getAllPoint()"/>
+    <input type="button" value="开始执行" onclick="getStart()"/>
+    <input id="kedWord" type="text" name="输入">
+    <input id="1" type="button"  style="display:none;" onclick="setStartEnd1()"/>
+    <input id="2" type="button"  style="display:none;" onclick="setStartEnd2()"/>
+    <input  id="3" type="button" style="display:none;" onclick="setStartEnd3()"/>
+    <input id="4"  type="button" style="display:none;" onclick="setStartEnd4()"/>
+    <input  id="5" type="button" style="display:none;" onclick="setStartEnd5()"/>
+    <input  id="6" type="button" style="display:none;" onclick="setStartEnd6()"/>
+    <input  id="7" type="button" style="display:none;" onclick="setStartEnd7()"/>
+</body>
+</html>
+<script type="text/javascript">
+
+var count = 0;//记录每一小格矩形调用一次，增加一
+var finalCount =0;//记录每一个大格子矩形调用一次，增加一
+var typeCount = 0;//类型
+var typePoi = ["驾校","委党校","汽校","职校","公安局","艺术馆"];//关键字
+keyword = typePoi[0];
+    var xCell = (114.578936-114.147297)/4.0;
+    var yCell = (30.702614-30.402785)/4.0;
+    leftDownX = 114.147297;
+    leftDownY = 30.402785;
+    var point1 = new BMap.Point(leftDownX,leftDownY);
+    var point2 = new BMap.Point(leftDownX+1*xCell,leftDownY+3*yCell);
+    var point3 = new BMap.Point(leftDownX+0*xCell,leftDownY+3*yCell);
+    var point4 = new BMap.Point(leftDownX+4*xCell,leftDownY+4*yCell);
+    var point5 = new BMap.Point(leftDownX+1*xCell,leftDownY-1*yCell);
+    var point6 = new BMap.Point(leftDownX+2.5*xCell,leftDownY+1*yCell);
+    var point7 = new BMap.Point(leftDownX+4*xCell,leftDownY+2*yCell);
+    var point8 = new BMap.Point(leftDownX+1*xCell,leftDownY+1*yCell);
+    var point9 = new BMap.Point(leftDownX+2.5*xCell,leftDownY+2*yCell);
+    var point10 = new BMap.Point(leftDownX+4*xCell,leftDownY+3*yCell);
+    var point11= new BMap.Point(leftDownX+1*xCell,leftDownY+2*yCell);
+    var point12 = new BMap.Point(leftDownX+2.5*xCell,leftDownY+3*yCell);
+    var point13 = new BMap.Point(leftDownX+4*xCell,leftDownY+1*yCell);
+
+    // 百度地图API功能
+    var pointArray = new Array();
+    var keyword;
+    var pStart;
+    var pEnd;
+    var map = new BMap.Map("allmap");            // 创建Map实例
+    map.centerAndZoom(new BMap.Point(114.394617,30.627138), 13);
+    map.enableScrollWheelZoom();                            //启用滚轮放大缩小
+
+//    pStart = new BMap.Point(116.274625,39.961627);
+//    pEnd = new BMap.Point(116.367474,39.988609);
+
+    function sleep(sleepTime) {
+        for(var start = Date.now(); Date.now() - start <= sleepTime; ) { }
+    }
+    var options = {
+        onSearchComplete: function(results){//LocalResultPoi这个类
+            var s = [];
+//            if(results.getNumPois()) {
+//                alert(results.getNumPois());
+//            }
+                for (var i = 0; i < results.getCurrentNumPois(); i ++){
+                    s.push(results.getPoi(i).title + "|" + results.getPoi(i).address+ "|" +results.getPoi(i).point.lng+ "|" +results.getPoi(i).point.lat+ "|" + results.getPoi(i).url+ "|" + results.getPoi(i).city+ "|" + results.getPoi(i).phoneNumber+ "|" + results.getPoi(i).postcode+ "|" + results.getPoi(i).type+ "|" + results.getPoi(i).isAccurate+ "|" + results.getPoi(i).province+ "|" + results.getPoi(i).tags+ "|" + results.getPoi(i).detailUrl+"huanhang");
+                    //s.push(results.getPoi(i).title + "," + results.getPoi(i).address+ "," +results.getPoi(i).point.lng+ "," +results.getPoi(i).point.lat+"huanhang");
+
+				}
+                savePoi(s);
+            if(count == 395) {
+//                alert("本矩形完成")
+                finalCount ++;
+                sleep(2000);
+                if(finalCount ==7){
+//                    alert("本类型完成")
+                    map.clearOverlays();
+                    finalCount = 0;
+                    typeCount++;
+                    document.getElementById("r-result").innerHTML += keyword.toString();
+                    keyword = typePoi[typeCount];
+                }
+                if(finalCount < 7) {
+                    document.getElementById((finalCount + 1).toString()).onclick();
+                }
+
+            }
+
+//                document.getElementById("r-result").innerHTML += s.join("<br/>");
+
+        },
+        pageCapacity:100,
+       // renderOptions:{map: map,autoViewport: false}//在图上显示气泡
+       renderOptions:{autoViewport: false}
+    };
+
+
+
+    function judgeCount(count){
+
+    }
+
+    function getPolygon(pStart,pEnd){
+        return new BMap.Polygon([
+            new BMap.Point(pStart.lng,pStart.lat),
+            new BMap.Point(pEnd.lng,pStart.lat),
+            new BMap.Point(pEnd.lng,pEnd.lat),
+            new BMap.Point(pStart.lng,pEnd.lat)
+        ], {strokeColor:"red", strokeWeight:2, strokeOpacity:0.5});
+    }
+
+    function sleep(sleepTime) {
+        for(var start = Date.now(); Date.now() - start <= sleepTime; ) { }
+    }
+
+     function oneToN(pStart,pEnd,n) {//把一个矩形划分成n*n个矩形
+         for(var i = 0; i < n; i++){
+             for(var j = 0; j < n; j++){
+                 startX = pStart.lng + (pEnd.lng - pStart.lng)*j/n;
+                 startY = pStart.lat - (pStart.lat - pEnd.lat)*i/n;
+                 endX = startX + (pEnd.lng - pStart.lng)/n;
+                 endY = startY - (pStart.lat - pEnd.lat)/n;
+                 var startPoint = new BMap.Point(startX,startY);
+                 var endPoint = new BMap.Point(endX,endY);
+                 //map.addOverlay(getPolygon(startPoint,endPoint));
+                 var bounds = new BMap.Bounds(startPoint,endPoint);
+                 new BMap.LocalSearch(map, options).searchInBounds(keyword, bounds);
+             }
+         }
+     }
+    function savePoi(s){
+        count++;
+//        alert(s)
+        var socket = io.connect('http://127.0.0.1:3000');
+        socket.emit("fileName",{text:getKeyword()})
+        socket.on("message",function(data){
+//            alert(data.text)
+        })
+        socket.emit("poi",{text:s})
+        s = [];
+    }
+
+    map.addEventListener("click",function(e){
+        var removeMarker = function(e,ee,marker){
+            map.removeOverlay(marker);
+            pointArray.indexOf(changePointToArray(marker));
+            pointArray.splice(pointArray.indexOf(changePointToArray(marker),1));
+        }
+        //创建右键菜单
+        var markerMenu=new BMap.ContextMenu();
+        var point = new BMap.Point(e.point.lng,e.point.lat)
+        var marker = new BMap.Marker(point);
+        marker.addContextMenu(markerMenu);
+        markerMenu.addItem(new BMap.MenuItem('删除',removeMarker.bind(marker)));
+        map.addOverlay(marker);
+        pointArray.push(changePointToArray(marker));
+    });
+
+    function changePointToArray(myMarcker){//将marker转换为坐标数组
+        var tempArray = new Array(2);
+        tempArray[0] = myMarcker.getPosition().lng;
+        tempArray[1] = myMarcker.getPosition().lat;
+        return tempArray;
+    }
+
+    function getKeyword(){
+        if(document.getElementById("kedWord").value) {
+            keyword = document.getElementById("kedWord").value
+        }else{
+
+        }
+        return keyword;
+    }
+
+    function getAllPoint(){//弹出坐标串
+        if(pointArray.length != 2){
+            alert("输入的点数量不等于2")
+        }else{//餐厅116.399957,39.934468,116.405993,39.92971
+             pStart = new BMap.Point(pointArray[0][0],pointArray[0][1]);
+             pEnd = new BMap.Point(pointArray[1][0],pointArray[1][1]);
+
+            oneToN(pStart,pEnd,20)
+            alert(getKeyword() + pointArray.toString());
+        }
+    }
+    function setStartEnd1(){
+        keyword = getKeyword()
+        count = 0;
+        pStart = point1;
+        pEnd = point2;
+        oneToN(pStart,pEnd,20)
+    }
+    function setStartEnd2(){
+        keyword = getKeyword()
+        count = 0;
+        pStart = point3;
+        pEnd = point4;
+        oneToN(pStart,pEnd,20)
+    }
+    function setStartEnd3(){
+        keyword = getKeyword()
+        count = 0;
+        pStart = point11;
+        pEnd = point12;
+        oneToN(pStart,pEnd,20)
+    }
+    function setStartEnd4(){
+        keyword = getKeyword()
+        count = 0;
+        pStart = point9;
+        pEnd = point10;
+        oneToN(pStart,pEnd,20)
+    }
+    function setStartEnd5(){
+        keyword = getKeyword()
+        count = 0;
+        pStart = point8;
+        pEnd = point9;
+        oneToN(pStart,pEnd,20)
+    }
+    function setStartEnd6(){
+        keyword = getKeyword()
+        count = 0;
+        pStart = point6;
+        pEnd = point7;
+        oneToN(pStart,pEnd,20)
+    }
+    function setStartEnd7(){
+        keyword = getKeyword()
+        count = 0;
+        pStart = point5;
+        pEnd = point13;
+        oneToN(pStart,pEnd,20)
+    }
+    function getStart(){
+        document.getElementById("1").onclick();
+    }
+
+</script>
